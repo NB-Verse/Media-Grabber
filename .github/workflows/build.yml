@@ -1,0 +1,56 @@
+# Builds Media Grabber for Windows, Mac and Linux and publishes it as a GitHub Release.
+# Runs by itself whenever the program or page changes on the main branch,
+# and can also be started by hand from the Actions tab ("Run workflow").
+name: Build Media Grabber
+
+on:
+  push:
+    branches: [main, master]
+    paths: ["*.go", "go.mod", "index.html", ".github/workflows/build.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build for every system
+        run: |
+          VERSION="2.${{ github.run_number }}"
+          LDFLAGS="-s -w -X main.appVersion=$VERSION"
+          mkdir -p dist
+          export CGO_ENABLED=0
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "$LDFLAGS" -o dist/MediaGrabber.exe .
+          GOOS=darwin  GOARCH=arm64 go build -trimpath -ldflags "$LDFLAGS" -o dist/MediaGrabber-mac-apple-chip .
+          GOOS=darwin  GOARCH=amd64 go build -trimpath -ldflags "$LDFLAGS" -o dist/MediaGrabber-mac-intel .
+          GOOS=linux   GOARCH=amd64 go build -trimpath -ldflags "$LDFLAGS" -o dist/MediaGrabber-linux .
+          GOOS=linux   GOARCH=arm64 go build -trimpath -ldflags "$LDFLAGS" -o dist/MediaGrabber-linux-arm64 .
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Media Grabber ${{ env.VERSION }}
+          make_latest: true
+          files: dist/*
+          body: |
+            **Windows:** download `MediaGrabber.exe` and double-click it. Nothing to install.
+            If Windows says "Windows protected your PC", click **More info**, then **Run anyway**.
+
+            **Mac:** `MediaGrabber-mac-apple-chip` (M1/M2/M3/M4) or `MediaGrabber-mac-intel`.
+            **Linux:** `MediaGrabber-linux`.
+
+            The video downloader inside (yt-dlp) updates itself, so you only need a new copy
+            of Media Grabber when the page or program itself changes.
