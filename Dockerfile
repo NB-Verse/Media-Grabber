@@ -1,17 +1,16 @@
-FROM python:3.12-slim
+# Media Grabber on a server (optional). Most people should just run MediaGrabber.exe on their own computer.
+FROM golang:1.24 AS build
+WORKDIR /src
+COPY go.mod *.go index.html ./
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.appVersion=docker" -o /media-grabber .
 
-# FFmpeg for merging, converting and cutting. Deno so yt-dlp can handle YouTube.
+FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=denoland/deno:bin /deno /usr/local/bin/deno
+COPY --from=build /media-grabber /usr/local/bin/media-grabber
 
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY app.py index.html ./
-
-ENV HOST=0.0.0.0 PORT=8000 DOWNLOAD_DIR=/tmp/media-grabber
+# yt-dlp and Deno are downloaded into /data on first start and kept up to date automatically.
+ENV HOST=0.0.0.0 PORT=8000 MG_NO_BROWSER=1 MG_DATA_DIR=/data
+VOLUME /data
 EXPOSE 8000
-
-# One worker (download jobs live in memory) with several threads.
-CMD gunicorn -w 1 --threads 8 --timeout 0 -b 0.0.0.0:${PORT} app:app
+CMD ["media-grabber"]

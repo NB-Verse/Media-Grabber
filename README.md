@@ -1,155 +1,120 @@
 # Media Grabber
 
-A simple one-page web app to save videos and audio from YouTube, Instagram, Facebook, X (Twitter), Vimeo and more than 1,000 other sites.
+Save videos and audio from YouTube, Instagram, Facebook, X (Twitter), Vimeo and more than 1,000 other sites.
 
-**What it does**
-
-- Paste a link and see the title, thumbnail and length before you download.
-- Save the **video** in the quality you choose (up to 4K where the site offers it). Files are saved as MP4 so they play on any phone or computer.
-- Save **audio only** as MP3, M4A or WAV.
-- Save **only a part** of a long video. Drag the slider or type a start and end time (for example `1:30` to `2:45`), and only that part is downloaded.
-- See a live progress bar, and cancel at any time.
-
-The downloading is done by [yt-dlp](https://github.com/yt-dlp/yt-dlp), the most widely used and most frequently updated downloader. It is updated every few days when sites change, which is why it fails far less often than most online downloader websites.
+- **Video:** pick the quality you want, up to 4K where the site offers it. Files are saved as MP4, so they play on any phone or computer.
+- **Audio only:** save as MP3, M4A or WAV.
+- **Only a part:** drag the slider or type a start and end time (for example `1:30` to `2:45`), and only that part is downloaded.
+- **Login help:** for Instagram or Facebook posts that need you to be logged in, Media Grabber can use the login from your browser.
+- **Stays working by itself:** the downloader inside updates itself. If a download fails because a site changed, Media Grabber updates and tries again on its own.
 
 ---
 
-## Why it needs a small server (and can't be GitHub Pages only)
+## How to use it (Windows)
 
-YouTube, Instagram and Facebook block web pages from fetching their videos directly from the browser. Every working downloader has a small program running behind it that fetches the file for you. In this project that program is `app.py`. It runs on your own computer, and the page opens in your browser.
+1. Go to this project's **Releases** page and download **`MediaGrabber.exe`**.
+2. Double-click it. Nothing else needs to be installed: no Python, no extra software.
+3. If Windows shows "Windows protected your PC", click **More info**, then **Run anyway**. (This appears for any new program that isn't from a big publisher.)
+4. **The first time only**, it sets itself up by downloading its tools (about 150 MB). This takes a minute or two. Your browser then opens Media Grabber.
+5. Paste a link, choose video or audio, and click Download.
 
-**Running it on your own computer is the best option.** YouTube often blocks downloads that come from cloud servers ("Sign in to confirm you're not a bot"), but it rarely blocks a normal home or office internet connection.
+Keep the black Media Grabber window open while you download, and close it when you're done. Next time, just double-click `MediaGrabber.exe` again.
 
----
-
-## Quick start
-
-### Windows
-
-1. Install Python from <https://www.python.org/downloads/>. During setup, tick **"Add python.exe to PATH"**.
-2. Download this project (green **Code** button → **Download ZIP**) and unzip it.
-3. Double-click **`start.bat`**.
-
-The first run installs everything it needs (FFmpeg, Deno and yt-dlp) and opens the app at <http://127.0.0.1:8000>. After that, double-click `start.bat` whenever you want to use it. It also updates yt-dlp each time, which keeps downloads working.
-
-### Mac / Linux
-
-```bash
-git clone https://github.com/<your-username>/media-grabber.git
-cd media-grabber
-chmod +x start.sh
-./start.sh
-```
-
-If it says FFmpeg or Deno is missing, run the install command it shows, then run `./start.sh` again.
-
-### Docker (any computer or server)
-
-```bash
-docker build -t media-grabber .
-docker run -p 8000:8000 media-grabber
-```
-
-Then open <http://localhost:8000>.
+**Mac:** download `MediaGrabber-mac-apple-chip` (M1 or newer) or `MediaGrabber-mac-intel`. Install FFmpeg once with `brew install ffmpeg`.
+**Linux:** download `MediaGrabber-linux`, then run `chmod +x MediaGrabber-linux && ./MediaGrabber-linux`. Install FFmpeg with `sudo apt install ffmpeg`.
 
 ---
 
-## What each part needs
+## Putting it on GitHub
 
-| Feature | Needs |
-|---|---|
-| Downloading from most sites | Python + yt-dlp |
-| YouTube | Deno (yt-dlp uses it to read YouTube's player) |
-| HD video with sound, MP3, cutting a part | FFmpeg |
+1. Create a new repository on GitHub and upload all the files in this folder (including the hidden `.github` folder).
+2. GitHub builds `MediaGrabber.exe` by itself and publishes it under **Releases** a few minutes later. You can watch it in the **Actions** tab. It rebuilds every time you change the program or the page.
+3. *(Optional)* Turn on GitHub Pages: **Settings → Pages → Deploy from a branch → main → / (root)**. Your page at `https://<your-name>.github.io/<repo>/` then shows a **Download for Windows** button. If Media Grabber is already running on the visitor's computer, the page takes them straight to it.
 
-The page shows a yellow notice if FFmpeg or Deno is missing.
+If the Actions build doesn't start, go to **Settings → Actions → General** and make sure Actions are allowed and "Workflow permissions" is set to **Read and write**.
 
 ---
 
 ## When a download fails
 
-**"Log in required" (Instagram, Facebook) or "Confirm you're not a bot" (YouTube)**
-Some posts can only be seen when you're logged in. You can let the app use the login from your browser:
+| What you see | What to do |
+|---|---|
+| "Only shown to people who are logged in" (Instagram, Facebook) | Open **"Instagram or Facebook asking you to log in?"** at the bottom of the page and choose the browser you use for that site. **Firefox works best on Windows.** Chrome and Edge often lock their login data while they're open, so close them fully first, or use a `cookies.txt` file. |
+| YouTube "check that you're not a robot" | Same as above. Choose a browser where you're signed in to YouTube. |
+| "This video is private" | Only works if your own account can see it, with the login option above. |
+| "Couldn't reach the site" | Check your internet connection. |
+| Something else, after it used to work | Close Media Grabber and open it again. It checks for updates every time it starts and every 12 hours while it runs. |
 
-```bash
-# Windows (PowerShell)
-$env:COOKIES_FROM_BROWSER="firefox"; python app.py
-
-# Mac / Linux
-COOKIES_FROM_BROWSER=chrome python app.py
-```
-
-Use `chrome`, `edge`, `firefox`, `brave` or `safari`. Firefox works most reliably on Windows, because Chrome locks its cookie file while it is open. You can also export a `cookies.txt` file with a browser extension and set `COOKIES_FILE=path/to/cookies.txt`.
-
-Keep your cookies private. Never upload `cookies.txt` to GitHub (it's already in `.gitignore`).
-
-**It used to work and suddenly stopped**
-Sites change often. Update yt-dlp:
-
-```bash
-pip install -U "yt-dlp[default]"
-```
-
-(`start.bat` and `start.sh` already do this every time.)
-
-**Private videos** can't be downloaded unless your account can see them and you've added cookies.
+Your login stays on your computer. Media Grabber never sees or stores your password.
 
 ---
 
-## Settings
+## Where things are kept
 
-All optional. Set them as environment variables before starting.
+Everything Media Grabber downloads for itself lives in one folder, which you can delete at any time to start fresh:
+
+- Windows: `%LOCALAPPDATA%\MediaGrabber`
+- Mac: `~/Library/Application Support/MediaGrabber`
+- Linux: `~/.local/share/media-grabber`
+
+The files you download go to your browser's normal Downloads folder. The working copies inside Media Grabber's folder are cleaned up after an hour.
+
+---
+
+## Safety
+
+- Media Grabber only listens on your own computer (`127.0.0.1`). Other devices can't reach it unless you turn that on (see Settings below).
+- Other websites can't use it. Only the Media Grabber page it shows you can start downloads.
+- Its tools come straight from their official GitHub pages: [yt-dlp](https://github.com/yt-dlp/yt-dlp), [Deno](https://github.com/denoland/deno) and [FFmpeg builds by yt-dlp](https://github.com/yt-dlp/FFmpeg-Builds).
+
+---
+
+## Settings (optional, for advanced users)
+
+Set these as environment variables before starting Media Grabber.
 
 | Setting | What it does | Default |
 |---|---|---|
-| `PORT` | Port the app runs on | `8000` |
-| `HOST` | Use `0.0.0.0` to open it to other devices on your Wi-Fi | `127.0.0.1` |
-| `COOKIES_FROM_BROWSER` | Use your browser login (see above) | off |
-| `COOKIES_FILE` | Path to a `cookies.txt` file | off |
-| `MAX_PARALLEL_DOWNLOADS` | How many downloads run at once | `2` |
-| `KEEP_FILES_MINUTES` | How long finished files are kept before cleanup | `60` |
-| `DOWNLOAD_DIR` | Where files are prepared | system temp folder |
-| `CORS_ORIGINS` | Allow a page on another site to use this server (see below) | off |
+| `PORT` | Port to use | tries 8000, then 8765, then 17800 |
+| `HOST` | Set to `0.0.0.0` to use it from your phone on the same Wi-Fi | `127.0.0.1` |
+| `MAX_PARALLEL_DOWNLOADS` | How many downloads run at the same time | `2` |
+| `KEEP_FILES_MINUTES` | How long finished files are kept for saving | `60` |
+| `MG_DATA_DIR` | Where Media Grabber keeps its tools | see above |
+| `MG_NO_BROWSER` | Set to `1` to stop the browser opening by itself | off |
 
-### Using it from your phone
+**Running on a server with Docker:**
 
-Start it with `HOST=0.0.0.0` on your computer, then open `http://<your-computer's-IP>:8000` on your phone while both are on the same Wi-Fi.
+```bash
+docker build -t media-grabber .
+docker run -p 8000:8000 -v media-grabber-data:/data media-grabber
+```
 
-### Hosting the page on GitHub Pages
-
-You can turn on GitHub Pages for this repo (Settings → Pages → deploy from `main`). The page needs a running server to do the downloading, so:
-
-1. Run `app.py` or the Docker image on a server, with `CORS_ORIGINS=https://<your-username>.github.io`.
-2. Open `https://<your-username>.github.io/media-grabber/?api=https://your-server-address`
-
-The page remembers the server address after the first visit. Keep in mind that YouTube is more likely to block cloud servers than home connections.
-
-### Quick links
-
-Open `http://127.0.0.1:8000/?url=<video link>` to load a video straight away. This is handy for a phone shortcut or a browser bookmark.
+Keep in mind that YouTube blocks cloud servers much more often than home internet connections.
 
 ---
 
-## How it works
+## For developers
 
-```
-index.html  →  the page you see (one file: layout, style and logic)
-app.py      →  the small server. It asks yt-dlp for the video details,
-               downloads the file, uses FFmpeg to join/convert/cut it,
-               then hands it to your browser.
+The whole program is in `main.go` (plus two small files for Windows and for Mac/Linux). The page is `index.html`, and it's built into the program. Nothing outside Go's standard library is used.
+
+```bash
+go test ./...
+GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o MediaGrabber.exe .
 ```
 
-| Address | Purpose |
+| Address | What it does |
 |---|---|
-| `POST /api/info` | Get title, thumbnail, length and available qualities |
-| `POST /api/download` | Start a download, returns a job id |
-| `GET /api/progress/<id>` | Progress of a download |
-| `POST /api/cancel/<id>` | Cancel a download |
-| `GET /api/file/<id>` | Save the finished file |
-| `GET /api/health` | Shows whether FFmpeg and Deno are installed |
+| `GET /api/health` | Whether it's ready, setup progress, tool versions |
+| `POST /api/info` | Title, thumbnail, length and qualities for a link |
+| `POST /api/download` | Starts a download and returns a job id |
+| `GET /api/progress/{id}` | Progress of a download |
+| `POST /api/cancel/{id}` | Cancels a download |
+| `GET /api/file/{id}` | The finished file |
+| `GET/POST /api/settings` | Login browser setting |
+| `POST/DELETE /api/cookies` | Upload or remove a cookies.txt file |
 
 ---
 
 ## Please use it responsibly
 
-Only download videos you own, that are free to reuse, or that you have permission to save. Downloading may go against the terms of some sites, and re-uploading other people's content can break copyright law.
+Only download videos you own, that are free to reuse, or that you have permission to save. Downloading may go against some sites' terms, and re-uploading other people's content can break copyright law.

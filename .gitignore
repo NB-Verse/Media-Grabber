@@ -1,6 +1,5 @@
-.venv/
-__pycache__/
-*.pyc
+dist/
+*.exe
 cookies.txt
 *.part
 .DS_Store

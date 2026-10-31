@@ -135,6 +135,19 @@
   .skeleton .b span { height: 12px; border-radius: 6px; }
   @keyframes shim { to { background-position: -200% 0; } }
 
+  .setup p { margin: 10px 0; font-size: 15px; }
+  .setup ol { margin: 10px 0; padding-left: 22px; font-size: 15px; }
+  .setup li { margin: 4px 0; }
+  .setup .muted { color: var(--muted); font-size: 14px; }
+  .setup code { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-size: 13px; }
+  .setup summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+  .setup-head { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .dot.off { background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
+  .dot.on { background: var(--ok); }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .status { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: 12px; color: var(--muted); }
+
   footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 28px; }
   footer a { color: inherit; }
 
@@ -146,6 +159,26 @@
     .url-row input { flex-basis: 100%; }
     .url-row button { flex: 1; }
   }
+  .btn-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; border-radius: 12px; padding: 13px 18px; font-weight: 600; }
+  .btn-link.btn-primary { color: var(--accent-ink); }
+  .landing h2, .prep h2 { font-size: 18px; margin: 0 0 6px; letter-spacing: -.01em; }
+  .landing .big { width: 100%; margin: 12px 0 6px; font-size: 17px; padding: 15px; }
+  .landing .alt { text-align: center; font-size: 14px; color: var(--muted); margin: 0 0 6px; }
+  .landing .alt a, .login a { color: inherit; }
+  .found { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--accent-soft); margin-top: 14px; font-size: 15px; }
+  .found .btn-link { margin-left: auto; padding: 8px 14px; }
+  .login { padding: 0; }
+  .login > summary { list-style: none; cursor: pointer; padding: 16px 20px; display: flex; align-items: center; gap: 10px; }
+  .login > summary::-webkit-details-marker { display: none; }
+  .login > summary::after { content: "▾"; margin-left: auto; color: var(--muted); transition: transform .2s; }
+  .login[open] > summary::after { transform: rotate(180deg); }
+  .login .inner { padding: 0 20px 18px; }
+  .login p { margin: 0 0 12px; font-size: 15px; }
+  .login .muted { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .file-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .file-row input[type=file] { font: inherit; font-size: 14px; max-width: 100%; }
+  .saved { color: var(--ok); font-size: 13px; font-weight: 600; }
+  .thumb-link { font-size: 13px; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -155,6 +188,7 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>
     </div>
     <h1>Media Grabber</h1>
+    <span id="status" class="status hidden"><span class="dot on"></span>Ready</span>
   </header>
   <p class="tagline">Paste a link. Save the video or just the audio. Cut out only the part you need.</p>
   <div class="sites">
@@ -162,104 +196,165 @@
     <span class="chip">X / Twitter</span><span class="chip">Vimeo</span><span class="chip">+1,000 more</span>
   </div>
 
+  <!-- Shown on GitHub Pages (or any copy of this page) until Media Grabber is found on this computer -->
+  <section id="landing" class="card landing setup hidden" aria-live="polite">
+    <h2>Get Media Grabber for your computer</h2>
+    <p>Sites like YouTube, Instagram and Facebook don't let a web page save their videos by itself. Media Grabber is a small free program that does the saving on your computer. It needs no installation, and there's nothing else to set up.</p>
+    <a id="exeLink" class="btn-link btn-primary big" href="#">⬇&nbsp; Download for Windows</a>
+    <p class="alt"><a id="relLink" href="#" target="_blank" rel="noopener">Mac or Linux</a></p>
+    <ol>
+      <li>Open the file you downloaded (<b>MediaGrabber.exe</b>).</li>
+      <li>If Windows says "Windows protected your PC", click <b>More info</b>, then <b>Run anyway</b>.</li>
+      <li>The first time, it sets itself up. This takes a minute or two. Then it opens in your browser.</li>
+    </ol>
+    <p class="muted" id="lookingNote">Already have it? Open MediaGrabber.exe and this page will take you there by itself. If your browser asks to let this site connect to devices on your network, click <b>Allow</b>.</p>
+    <div id="found" class="found hidden">
+      <span class="dot on"></span><span>Media Grabber is running on this computer.</span>
+      <a id="openLocal" class="btn-link btn-primary" href="#">Open it</a>
+    </div>
+  </section>
+
+  <!-- First-run setup progress (shown by the program itself) -->
+  <section id="prep" class="card prep hidden" aria-live="polite">
+    <h2>Getting ready (one time only)</h2>
+    <div class="prog-top"><span id="prepStage" class="prog-stats">Starting…</span><span id="prepPct" class="prog-stats"></span></div>
+    <div id="prepBar" class="bar indeterminate"><div></div></div>
+    <p id="prepErr" class="notice err hidden" style="margin:10px 0 0"></p>
+  </section>
+
+  <!-- The program was closed while this page was open -->
+  <section id="stopped" class="card hidden" aria-live="polite">
+    <div class="setup-head"><span class="dot off"></span><strong>Media Grabber has been closed</strong></div>
+    <p style="margin:10px 0 0">Open <b>MediaGrabber.exe</b> again. This page reconnects by itself.</p>
+  </section>
+
   <div id="health" class="notice warn hidden"></div>
   <div id="error" class="notice err hidden" role="alert"></div>
 
-  <!-- Step 1: link -->
-  <section class="card">
-    <label class="small" for="url">Video link</label>
-    <div class="url-row">
-      <input id="url" type="url" inputmode="url" autocomplete="off" placeholder="https://www.youtube.com/watch?v=..." />
-      <button id="pasteBtn" class="btn-ghost" type="button">Paste</button>
-      <button id="fetchBtn" class="btn-primary" type="button">Get video</button>
-    </div>
-  </section>
-
-  <!-- Loading skeleton -->
-  <section id="loading" class="card hidden" aria-live="polite">
-    <div class="skeleton"><div class="a"></div><div class="b"><span style="width:90%"></span><span style="width:70%"></span><span style="width:40%"></span></div></div>
-  </section>
-
-  <!-- Step 2: options -->
-  <section id="options" class="card hidden">
-    <div class="preview">
-      <img id="thumb" class="thumb" alt="" referrerpolicy="no-referrer" />
-      <div class="meta">
-        <span id="site" class="badge"></span>
-        <h2 id="title"></h2>
-        <p id="sub"></p>
+  <div id="app" class="hidden">
+    <!-- Step 1: link -->
+    <section class="card">
+      <label class="small" for="url">Video link</label>
+      <div class="url-row">
+        <input id="url" type="url" inputmode="url" autocomplete="off" placeholder="https://www.youtube.com/watch?v=..." />
+        <button id="pasteBtn" class="btn-ghost" type="button">Paste</button>
+        <button id="fetchBtn" class="btn-primary" type="button">Get video</button>
       </div>
-    </div>
-    <p id="multiNote" class="notice warn hidden" style="margin:14px 0 0">This post has several items. The first one will be downloaded.</p>
+    </section>
 
-    <div class="seg" role="tablist">
-      <button id="tabVideo" class="active" type="button" role="tab">🎬 Video</button>
-      <button id="tabAudio" type="button" role="tab">🎵 Audio only</button>
-    </div>
+    <!-- Loading skeleton -->
+    <section id="loading" class="card hidden" aria-live="polite">
+      <div class="skeleton"><div class="a"></div><div class="b"><span style="width:90%"></span><span style="width:70%"></span><span style="width:40%"></span></div></div>
+    </section>
 
-    <div id="videoOpts" class="row">
-      <label class="small" for="quality">Quality</label>
-      <select id="quality"></select>
-    </div>
+    <!-- Step 2: options -->
+    <section id="options" class="card hidden">
+      <div class="preview">
+        <img id="thumb" class="thumb" alt="" referrerpolicy="no-referrer" />
+        <div class="meta">
+          <span id="site" class="badge"></span>
+          <h2 id="title"></h2>
+          <p id="sub"></p>
+          <a id="thumbLink" class="thumb-link hidden" href="#" target="_blank" rel="noopener noreferrer">Open thumbnail image</a>
+        </div>
+      </div>
+      <p id="multiNote" class="notice warn hidden" style="margin:14px 0 0">This post has more than one item. The first one will be downloaded.</p>
 
-    <div id="audioOpts" class="row grid2 hidden">
-      <div>
-        <label class="small" for="audioFormat">Format</label>
-        <select id="audioFormat">
-          <option value="mp3">MP3 (plays everywhere)</option>
-          <option value="m4a">M4A (smaller, same quality)</option>
-          <option value="wav">WAV (uncompressed)</option>
+      <div class="seg" role="tablist">
+        <button id="tabVideo" class="active" type="button" role="tab">🎬 Video</button>
+        <button id="tabAudio" type="button" role="tab">🎵 Audio only</button>
+      </div>
+
+      <div id="videoOpts" class="row">
+        <label class="small" for="quality">Quality</label>
+        <select id="quality"></select>
+      </div>
+
+      <div id="audioOpts" class="row grid2 hidden">
+        <div>
+          <label class="small" for="audioFormat">Format</label>
+          <select id="audioFormat">
+            <option value="mp3">MP3 (plays everywhere)</option>
+            <option value="m4a">M4A (smaller, same quality)</option>
+            <option value="wav">WAV (uncompressed)</option>
+          </select>
+        </div>
+        <div id="bitrateWrap">
+          <label class="small" for="bitrate">MP3 quality</label>
+          <select id="bitrate">
+            <option value="320">High (320 kbps)</option>
+            <option value="192" selected>Standard (192 kbps)</option>
+            <option value="128">Small file (128 kbps)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="switch">
+        <div class="txt"><strong>Download only a part</strong><span>Pick a start and end time</span></div>
+        <label class="toggle"><input id="clipToggle" type="checkbox"><span class="knob"></span></label>
+      </div>
+
+      <div id="clipBox" class="clip-box hidden">
+        <div id="dual" class="dual">
+          <div class="track"></div><div id="fill" class="fill"></div>
+          <input id="rStart" type="range" min="0" max="100" step="1" value="0" aria-label="Start">
+          <input id="rEnd" type="range" min="0" max="100" step="1" value="100" aria-label="End">
+        </div>
+        <div class="grid2">
+          <div><label class="small" for="tStart">Start</label><input id="tStart" type="text" inputmode="numeric" placeholder="0:00"></div>
+          <div><label class="small" for="tEnd">End</label><input id="tEnd" type="text" inputmode="numeric" placeholder="end"></div>
+        </div>
+        <div id="clipLen" class="clip-len"></div>
+        <label class="check"><input id="precise" type="checkbox" checked> Exact cut (a bit slower, cuts on the exact second)</label>
+      </div>
+
+      <button id="dlBtn" class="btn-primary btn-big" type="button">Download</button>
+    </section>
+
+    <!-- Step 3: progress -->
+    <section id="progress" class="card hidden" aria-live="polite">
+      <div class="prog-top"><strong id="stage">Starting…</strong><span id="pct" class="prog-stats"></span></div>
+      <div id="bar" class="bar"><div></div></div>
+      <div class="prog-top"><span id="stats" class="prog-stats"></span><button id="cancelBtn" class="btn-ghost" type="button" style="padding:6px 12px;font-size:14px">Cancel</button></div>
+    </section>
+
+    <!-- Step 4: done -->
+    <section id="done" class="card done hidden">
+      <div class="tick"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <strong>Your file is ready</strong>
+      <p id="doneName"></p>
+      <div class="actions">
+        <a id="saveLink" class="btn-link btn-primary" href="#">Save file</a>
+        <button id="againBtn" class="btn-ghost" type="button">Download another</button>
+      </div>
+    </section>
+
+    <!-- Login help -->
+    <details id="loginBox" class="card login">
+      <summary><strong>Instagram or Facebook asking you to log in?</strong></summary>
+      <div class="inner">
+        <p>Some posts are only shown to people who are logged in. Media Grabber can use your login from a browser on this computer. Your password is never seen or sent anywhere.</p>
+        <label class="small" for="browserSel">Use my login from</label>
+        <select id="browserSel">
+          <option value="">Don't use a login</option>
+          <option value="firefox">Firefox (works best)</option>
+          <option value="chrome">Chrome</option>
+          <option value="edge">Microsoft Edge</option>
+          <option value="brave">Brave</option>
+          <option value="opera">Opera</option>
+          <option value="vivaldi">Vivaldi</option>
         </select>
+        <p class="muted">On Windows, Chrome and Edge often lock their login data while they're open. If it doesn't work, close that browser completely, or use Firefox, or use a cookies.txt file below.</p>
+        <label class="small" for="cookieFile" style="margin-top:14px">Or upload a cookies.txt file</label>
+        <div class="file-row">
+          <input id="cookieFile" type="file" accept=".txt,text/plain">
+          <button id="cookieRemove" class="btn-ghost hidden" type="button" style="padding:6px 12px;font-size:14px">Remove file</button>
+        </div>
+        <p class="muted">Make one with a free "Get cookies.txt" browser extension while you're logged in. Only use the browser option or the file, not both.</p>
+        <span id="loginSaved" class="saved"></span>
       </div>
-      <div id="bitrateWrap">
-        <label class="small" for="bitrate">MP3 quality</label>
-        <select id="bitrate">
-          <option value="320">High (320 kbps)</option>
-          <option value="192" selected>Standard (192 kbps)</option>
-          <option value="128">Small file (128 kbps)</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="switch">
-      <div class="txt"><strong>Download only a part</strong><span>Pick a start and end time</span></div>
-      <label class="toggle"><input id="clipToggle" type="checkbox"><span class="knob"></span></label>
-    </div>
-
-    <div id="clipBox" class="clip-box hidden">
-      <div id="dual" class="dual">
-        <div class="track"></div><div id="fill" class="fill"></div>
-        <input id="rStart" type="range" min="0" max="100" step="1" value="0" aria-label="Start">
-        <input id="rEnd" type="range" min="0" max="100" step="1" value="100" aria-label="End">
-      </div>
-      <div class="grid2">
-        <div><label class="small" for="tStart">Start</label><input id="tStart" type="text" inputmode="numeric" placeholder="0:00"></div>
-        <div><label class="small" for="tEnd">End</label><input id="tEnd" type="text" inputmode="numeric" placeholder="end"></div>
-      </div>
-      <div id="clipLen" class="clip-len"></div>
-      <label class="check"><input id="precise" type="checkbox" checked> Exact cut (a bit slower, cuts on the exact second)</label>
-    </div>
-
-    <button id="dlBtn" class="btn-primary btn-big" type="button">Download</button>
-  </section>
-
-  <!-- Step 3: progress -->
-  <section id="progress" class="card hidden" aria-live="polite">
-    <div class="prog-top"><strong id="stage">Starting…</strong><span id="pct" class="prog-stats"></span></div>
-    <div id="bar" class="bar"><div></div></div>
-    <div class="prog-top"><span id="stats" class="prog-stats"></span><button id="cancelBtn" class="btn-ghost" type="button" style="padding:6px 12px;font-size:14px">Cancel</button></div>
-  </section>
-
-  <!-- Step 4: done -->
-  <section id="done" class="card done hidden">
-    <div class="tick"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
-    <strong>Your file is ready</strong>
-    <p id="doneName"></p>
-    <div class="actions">
-      <a id="saveLink" class="btn-primary" style="text-decoration:none;padding:12px 18px;border-radius:12px;font-weight:600" href="#">Save file</a>
-      <button id="againBtn" class="btn-ghost" type="button">Download another</button>
-    </div>
-  </section>
+    </details>
+  </div>
 
   <footer>
     Powered by <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a> and FFmpeg.
@@ -269,19 +364,17 @@
 
 <script>
 (() => {
-  // ---- Where is the backend? Same server by default.
-  // To host this page on GitHub Pages and point it to your own server, open:
-  //   https://<you>.github.io/<repo>/?api=https://your-server.example.com
-  const params = new URLSearchParams(location.search);
-  if (params.get("api")) { try { localStorage.setItem("mg_api", params.get("api")); } catch (e) {} }
-  let API = "";
-  try { API = (params.get("api") || localStorage.getItem("mg_api") || "").replace(/\/+$/, ""); } catch (e) {}
+  // If this page isn't hosted on GitHub Pages, put your repository here (for example "nish/media-grabber")
+  // so the Download button points to your releases.
+  const GITHUB_REPO = "";
+  const PORTS = [8000, 8765, 17800];
 
+  const params = new URLSearchParams(location.search);
   const $ = (id) => document.getElementById(id);
-  const state = { info: null, mode: "video", jobId: null, timer: null, duration: 0 };
+  const show = (el, on = true) => el.classList.toggle("hidden", !on);
+  const state = { info: null, url: "", mode: "video", jobId: null, timer: null, duration: 0, ready: false };
 
   // ---------- helpers ----------
-  const show = (el, on = true) => el.classList.toggle("hidden", !on);
   function toHMS(sec) {
     sec = Math.max(0, Math.round(sec || 0));
     const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
@@ -300,25 +393,153 @@
     while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
     return `${n.toFixed(i ? 1 : 0)} ${u[i]}`;
   }
-  function setError(msg) { $("error").textContent = msg || ""; show($("error"), !!msg); }
-  async function api(path, body) {
-    const res = await fetch(API + path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
-    let data = {};
+  function setError(msg, kind) {
+    $("error").textContent = msg || "";
+    show($("error"), !!msg);
+    if (kind === "login") { $("loginBox").open = true; }
+  }
+
+  async function probe(base) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 2500);
+    try {
+      const res = await fetch(base + "/api/health", { signal: ctrl.signal, cache: "no-store" });
+      const h = await res.json();
+      return h && h.app === "media-grabber" ? h : null;
+    } catch (e) { return null; } finally { clearTimeout(t); }
+  }
+
+  class ApiError extends Error { constructor(msg, kind) { super(msg); this.kind = kind; } }
+  async function api(path, opts = {}) {
+    let res;
+    try {
+      res = await fetch(path, opts.body !== undefined || opts.method ? {
+        method: opts.method || "POST",
+        headers: opts.raw ? { "Content-Type": "text/plain" } : { "Content-Type": "application/json" },
+        body: opts.raw ? opts.body : JSON.stringify(opts.body || {}),
+      } : { cache: "no-store" });
+    } catch (e) {
+      watchHealth(true);
+      throw new ApiError("Lost contact with Media Grabber. Is its window still open?");
+    }
+    let data = null;
     try { data = await res.json(); } catch (e) {}
-    if (!res.ok) throw new Error(data.error || `Server error (${res.status})`);
+    if (!res.ok || !data) throw new ApiError((data && data.error) || `Something went wrong (code ${res.status}).`, data && data.error_kind);
     return data;
   }
 
-  // ---------- health check ----------
-  api("/api/health").then((h) => {
+  // ================= Landing mode (GitHub Pages / any other copy) =================
+  function repo() {
+    if (GITHUB_REPO) return GITHUB_REPO;
+    const m = location.hostname.match(/^([^.]+)\.github\.io$/i);
+    if (!m) return "";
+    const first = location.pathname.split("/").filter(Boolean)[0];
+    return `${m[1]}/${first && !first.includes(".") ? first : m[1] + ".github.io"}`;
+  }
+
+  function startLanding() {
+    show($("landing"));
+    const r = repo();
+    if (r) {
+      $("exeLink").href = `https://github.com/${r}/releases/latest/download/MediaGrabber.exe`;
+      $("relLink").href = `https://github.com/${r}/releases/latest`;
+    } else {
+      $("exeLink").href = "https://github.com/";
+      $("exeLink").textContent = "Get MediaGrabber.exe from the project's Releases page";
+      show($("relLink").parentElement, false);
+    }
+    lookForLocal();
+  }
+
+  async function lookForLocal() {
+    const found = await Promise.all(PORTS.map((p) => probe(`http://127.0.0.1:${p}`).then((h) => (h ? p : null))));
+    const port = found.find(Boolean);
+    if (!port) { setTimeout(lookForLocal, 3000); return; }
+    const target = `http://127.0.0.1:${port}/` + (params.get("url") ? `?url=${encodeURIComponent(params.get("url"))}` : "");
+    $("openLocal").href = target;
+    show($("found")); show($("lookingNote"), false);
+    location.href = target;
+  }
+
+  // ================= App mode (page served by Media Grabber itself) =================
+  let healthTimer = null;
+  function onHealth(h) {
+    show($("stopped"), false);
+    if (!h.ready) {
+      state.ready = false;
+      show($("app"), false); show($("prep")); show($("status"), false);
+      const s = h.setup || {};
+      $("prepStage").textContent = s.stage || "Starting…";
+      const pct = typeof s.percent === "number" ? s.percent : null;
+      $("prepPct").textContent = pct != null ? `${Math.floor(pct)}%` : "";
+      $("prepBar").classList.toggle("indeterminate", pct == null);
+      $("prepBar").firstElementChild.style.width = pct == null ? "" : pct + "%";
+      $("prepErr").textContent = s.error ? `${s.error}. Trying again shortly. Check your internet connection.` : "";
+      show($("prepErr"), !!s.error);
+      clearTimeout(healthTimer);
+      healthTimer = setTimeout(() => watchHealth(false), 800);
+      return;
+    }
+    const firstTime = !state.ready;
+    state.ready = true;
+    show($("prep"), false); show($("app")); show($("status"));
     const msgs = [];
-    if (!h.ffmpeg) msgs.push("FFmpeg isn't installed, so MP3 conversion, high-quality video and cutting clips won't work.");
-    if (!h.js_runtime) msgs.push("Deno isn't installed, so YouTube downloads may fail.");
-    if (msgs.length) { $("health").textContent = msgs.join(" ") + " See the README for the one-line install."; show($("health")); }
-  }).catch(() => {
-    $("health").textContent = "Can't reach the download server. Start it with 'python app.py' (see README).";
-    show($("health"));
-  });
+    const mac = h.os === "darwin", linux = h.os === "linux";
+    if (!h.ffmpeg) msgs.push(mac ? "FFmpeg is missing. Install it with: brew install ffmpeg"
+      : linux ? "FFmpeg is missing. Install it with: sudo apt install ffmpeg"
+      : "The video converter (FFmpeg) is missing. Close Media Grabber and open it again.");
+    if (!h.js_runtime) msgs.push("The YouTube helper (Deno) is missing, so YouTube may not work.");
+    $("health").textContent = msgs.join(" ");
+    show($("health"), msgs.length > 0);
+    if (firstTime) {
+      loadSettings();
+      if (params.get("url") && !state.url) { $("url").value = params.get("url"); fetchInfo(); }
+      else $("url").focus();
+    }
+  }
+
+  async function watchHealth(lost) {
+    clearTimeout(healthTimer);
+    const h = await probe("");
+    if (h) { onHealth(h); return; }
+    if (state.ready || lost) {
+      show($("stopped")); show($("status"), false);
+      state.ready = false;
+    }
+    healthTimer = setTimeout(() => watchHealth(true), 3000);
+  }
+
+  // ---------- login settings ----------
+  function renderSettings(s) {
+    $("browserSel").value = s.cookies_browser || "";
+    show($("cookieRemove"), !!s.has_cookies_file);
+    if (s.cookies_browser || s.has_cookies_file) $("loginBox").open = true;
+  }
+  async function loadSettings() {
+    try { renderSettings(await api("/api/settings")); } catch (e) {}
+  }
+  function flashSaved(text) {
+    $("loginSaved").textContent = text;
+    setTimeout(() => { $("loginSaved").textContent = ""; }, 2500);
+  }
+  $("browserSel").onchange = async () => {
+    try { renderSettings(await api("/api/settings", { body: { cookies_browser: $("browserSel").value } })); flashSaved("Saved"); }
+    catch (e) { setError(e.message); }
+  };
+  $("cookieFile").onchange = async () => {
+    const f = $("cookieFile").files[0];
+    if (!f) return;
+    try {
+      const text = await f.text();
+      renderSettings(await api("/api/cookies", { body: text, raw: true }));
+      flashSaved("cookies.txt saved");
+    } catch (e) { setError(e.message); }
+    $("cookieFile").value = "";
+  };
+  $("cookieRemove").onclick = async () => {
+    try { renderSettings(await api("/api/cookies", { method: "DELETE" })); flashSaved("Removed"); }
+    catch (e) { setError(e.message); }
+  };
 
   // ---------- step 1: fetch info ----------
   $("pasteBtn").onclick = async () => {
@@ -334,11 +555,11 @@
     setError(""); show($("options"), false); show($("done"), false); show($("progress"), false);
     show($("loading")); $("fetchBtn").disabled = true;
     try {
-      const info = await api("/api/info", { url });
+      const info = await api("/api/info", { body: { url } });
       state.info = info; state.url = url;
       renderInfo(info);
     } catch (e) {
-      setError(e.message);
+      setError(e.message, e.kind);
     } finally {
       show($("loading"), false); $("fetchBtn").disabled = false;
     }
@@ -352,28 +573,31 @@
     if (info.duration) bits.push(toHMS(info.duration));
     if (info.is_live) bits.push("Live");
     $("sub").textContent = bits.join(" · ");
-    if (info.thumbnail) { $("thumb").src = info.thumbnail; show($("thumb")); } else show($("thumb"), false);
+    if (info.thumbnail) {
+      $("thumb").src = info.thumbnail; show($("thumb"));
+      $("thumbLink").href = info.thumbnail; show($("thumbLink"));
+    } else { show($("thumb"), false); show($("thumbLink"), false); }
     $("thumb").onerror = () => show($("thumb"), false);
     show($("multiNote"), !!info.multiple_items);
 
     const q = $("quality"); q.innerHTML = "";
     const add = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; q.appendChild(o); };
     const label = (h) => h >= 2160 ? `${h}p (4K)` : h >= 1440 ? `${h}p (2K)` : h >= 1080 ? `${h}p (Full HD)` : h >= 720 ? `${h}p (HD)` : `${h}p`;
-    add("best", info.heights.length ? `Best available (${label(info.heights[0])})` : "Best available");
-    info.heights.forEach((h) => add(String(h), label(h)));
+    const heights = info.heights || [];
+    add("best", heights.length ? `Best available (${label(heights[0])})` : "Best available");
+    heights.forEach((h) => add(String(h), label(h)));
 
-    // Audio-only source (e.g. a podcast): switch to audio
     setMode(info.has_video ? "video" : "audio");
     $("tabVideo").disabled = !info.has_video;
 
-    // Clip slider
     state.duration = info.duration || 0;
     $("clipToggle").checked = false; show($("clipBox"), false);
     const max = Math.max(1, Math.round(state.duration));
     ["rStart", "rEnd"].forEach((id) => { $(id).max = max; });
     $("rStart").value = 0; $("rEnd").value = max;
     show($("dual"), state.duration > 0);
-    syncFromSliders();
+    if (state.duration > 0) syncFromSliders();
+    else { $("tStart").value = ""; $("tEnd").value = ""; updateLen(); }
     show($("options"));
     $("options").scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
@@ -390,7 +614,6 @@
   $("tabVideo").onclick = () => setMode("video");
   $("tabAudio").onclick = () => setMode("audio");
   $("audioFormat").onchange = () => show($("bitrateWrap"), $("audioFormat").value === "mp3");
-
   $("clipToggle").onchange = () => show($("clipBox"), $("clipToggle").checked);
 
   function syncFromSliders(e) {
@@ -415,7 +638,7 @@
     const s = fromHMS($("tStart").value) || 0;
     const en = fromHMS($("tEnd").value);
     if (en == null || isNaN(en) || isNaN(s)) { $("clipLen").textContent = ""; return; }
-    $("clipLen").textContent = en > s ? `Clip length: ${toHMS(en - s)}` : "End time must be after the start time";
+    $("clipLen").textContent = en > s ? `Clip length: ${toHMS(en - s)}` : "The end time must be after the start time";
   }
   $("rStart").oninput = syncFromSliders;
   $("rEnd").oninput = syncFromSliders;
@@ -426,39 +649,35 @@
   $("dlBtn").onclick = async () => {
     setError("");
     const body = {
-      url: state.url,
-      mode: state.mode,
-      quality: $("quality").value || "best",
-      audio_format: $("audioFormat").value,
-      audio_bitrate: $("bitrate").value,
+      url: state.url, mode: state.mode, quality: $("quality").value || "best",
+      audio_format: $("audioFormat").value, audio_bitrate: $("bitrate").value,
     };
     if ($("clipToggle").checked) {
       const s = fromHMS($("tStart").value), en = fromHMS($("tEnd").value);
       if ((s != null && isNaN(s)) || (en != null && isNaN(en))) return setError("Please write times like 1:30 or 0:01:30.");
       if (s != null && en != null && en <= s) return setError("The end time must be after the start time.");
-      const full = state.duration && s === 0 && en != null && Math.round(en) >= Math.round(state.duration);
-      if (!full) { body.start = s; body.end = (state.duration && en != null && en >= state.duration) ? null : en; }
+      const whole = state.duration && (s || 0) === 0 && en != null && Math.round(en) >= Math.round(state.duration);
+      if (!whole) { body.start = s; body.end = (state.duration && en != null && en >= state.duration) ? null : en; }
       body.precise = $("precise").checked;
     }
     $("dlBtn").disabled = true;
     try {
-      const { job_id } = await api("/api/download", body);
+      const { job_id } = await api("/api/download", { body });
       state.jobId = job_id;
       show($("options"), false); show($("progress"));
       $("stage").textContent = "Starting…"; $("pct").textContent = ""; $("stats").textContent = "";
       setBar(null);
       poll();
     } catch (e) {
-      setError(e.message);
+      setError(e.message, e.kind);
     } finally {
       $("dlBtn").disabled = false;
     }
   };
 
   function setBar(pct) {
-    const bar = $("bar");
-    bar.classList.toggle("indeterminate", pct == null);
-    bar.firstElementChild.style.width = pct == null ? "" : pct + "%";
+    $("bar").classList.toggle("indeterminate", pct == null);
+    $("bar").firstElementChild.style.width = pct == null ? "" : pct + "%";
   }
 
   async function poll() {
@@ -476,25 +695,26 @@
       $("stats").textContent = bits.join(" · ");
 
       if (p.status === "done") return finish(p);
-      if (p.status === "error") { show($("progress"), false); show($("options")); return setError(p.error || "Download failed."); }
+      if (p.status === "error") { show($("progress"), false); show($("options")); return setError(p.error || "The download failed.", p.error_kind); }
       if (p.status === "cancelled") { show($("progress"), false); show($("options")); return; }
-    } catch (e) { /* network blip, keep trying */ }
+    } catch (e) {
+      if (!state.ready) { show($("progress"), false); show($("options")); return setError(e.message); }
+    }
     state.timer = setTimeout(poll, 800);
   }
 
   $("cancelBtn").onclick = async () => {
     if (!state.jobId) return;
     $("stage").textContent = "Cancelling…";
-    try { await api("/api/cancel/" + state.jobId, {}); } catch (e) {}
+    try { await api("/api/cancel/" + state.jobId, { body: {} }); } catch (e) {}
   };
 
   function finish(p) {
     show($("progress"), false);
-    const href = API + "/api/file/" + state.jobId;
+    const href = "/api/file/" + state.jobId;
     $("saveLink").href = href;
     $("doneName").textContent = `${p.filename}${p.size ? " · " + bytes(p.size) : ""}`;
     show($("done"));
-    // Start the save automatically
     const a = document.createElement("a"); a.href = href; a.download = p.filename || "";
     document.body.appendChild(a); a.click(); a.remove();
   }
@@ -504,8 +724,14 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Open with ?url=... to load a link straight away (handy for phone share shortcuts)
-  if (params.get("url")) { $("url").value = params.get("url"); fetchInfo(); }
+  // ---------- start ----------
+  (async () => {
+    if (location.protocol.startsWith("http")) {
+      const h = await probe("");
+      if (h) { onHealth(h); return; }
+    }
+    startLanding();
+  })();
 })();
 </script>
 </body>
